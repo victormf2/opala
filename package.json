@@ -1,4 +1,13 @@
 {
   "name": "app-builder",
-  "packageManager": "yarn@3.6.3"
+  "packageManager": "yarn@3.6.3",
+  "workspaces": [
+    "libs/*"
+  ],
+  "scripts": {
+    "test": "run test:core"
+  },
+  "dependencies": {
+    "zod": "^3.22.2"
+  }
 }
