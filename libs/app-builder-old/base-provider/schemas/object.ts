@@ -1,5 +1,5 @@
 import { KeysOfType } from "../../utility-types";
-import { Constraint } from "../constraints/constraints.base";
+import { Rule } from "../rules/rules.base";
 import { Infer, Schema } from "./schemas.base";
 
 export type Shape = {
@@ -15,11 +15,8 @@ export type ShapeObject<S extends Shape> = Omit<
 export class ObjectSchema<S extends Shape = Shape> extends Schema<
   ShapeObject<S>
 > {
-  constructor(
-    readonly shape: S,
-    constraints: Constraint<ShapeObject<S>>[] = []
-  ) {
-    super(constraints);
+  constructor(readonly shape: S, rules: Rule<ShapeObject<S>>[] = []) {
+    super(rules);
   }
 }
 export function object<S extends Shape>(

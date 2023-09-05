@@ -3,11 +3,11 @@ import { Infer } from "../schemas/schemas.base";
 import { CreateConfiguration, create } from "./create";
 
 const TestReference = S.object({
-  something: S.number(),
+  something: S.int(),
 });
 const Test = S.object({
   str: S.string(),
-  num: S.number(),
+  num: S.int(),
   obj: S.object({
     p0: S.string(),
     p1: S.string(),

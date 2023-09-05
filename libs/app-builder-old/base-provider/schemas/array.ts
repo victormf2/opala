@@ -1,14 +1,11 @@
-import { Constraint } from "../constraints/constraints.base";
+import { Rule } from "../rules/rules.base";
 import { Infer, Schema } from "./schemas.base";
 
 export type ArraySchemaItem<RS extends ArraySchema> = Infer<RS>[number];
 
 export class ArraySchema<S extends Schema = Schema> extends Schema<Infer<S>[]> {
-  constructor(
-    readonly itemSchema: S,
-    constraints: Constraint<Infer<S>[]>[] = []
-  ) {
-    super(constraints);
+  constructor(readonly itemSchema: S, rules: Rule<Infer<S>[]>[] = []) {
+    super(rules);
   }
 }
 
