@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { AnyZodObject, ZodTypeAny, z } from 'zod';
 import { extendZodSchema } from '../zod-extension';
 import { MySqlTable, NumericMySqlColumn } from './types';
 import { ZodMySqlTables, getMySqlColumnForZodSchema } from './zod-to-mysql';
@@ -138,7 +138,6 @@ describe('getMySqlTableForZodSchema', function () {
     const Product = z.object({
       id: z.number().int(),
       name: z.string(),
-      categories: z.lazy(() => z.array(ProductCategory)),
     });
 
     const ProductCategory = z.object({
@@ -187,3 +186,163 @@ describe('getMySqlTableForZodSchema', function () {
     });
   });
 });
+
+const Product = z.object({
+  id: z.number().int(),
+  name: z.string(),
+});
+const ProductCategory = z.object({
+  id: z.number().int(),
+  name: z.string(),
+  productId: z.number().int(),
+});
+
+const n = {
+  schema: ProductCategory,
+  primaryKey: ['id'],
+  references: {
+    product: {
+      belongsToOne: Product,
+      referencedBy: ['productId'],
+    },
+  },
+};
+
+const f = {
+  schema: Product,
+  primaryKey: ['id'],
+  references: {
+    category: {
+      hasOne: ProductCategory,
+      referencedBy: ['productId'],
+    },
+  },
+};
+
+type HasOneReference<
+  Schema extends AnyZodObject = AnyZodObject,
+  ForeignKey extends (keyof Schema['shape'])[] = []
+> = {
+  hasOne: Schema;
+  referencedBy: ForeignKey;
+};
+type BelongsToOneReference<
+  ParentSchema extends AnyZodObject = AnyZodObject,
+  ChildSchema extends AnyZodObject = AnyZodObject,
+  ForeignKey extends (keyof ChildSchema['shape'])[] = (keyof ChildSchema['shape'])[]
+> = {
+  belongsToOne: ParentSchema;
+  referencedBy: ForeignKey;
+};
+type Reference<
+  Schema extends AnyZodObject = AnyZodObject,
+  SchemaForeignKey extends (keyof Schema['shape'])[] = (keyof Schema['shape'])[],
+  RelatedSchema extends AnyZodObject = AnyZodObject,
+  RelatedSchemaForeignKey extends (keyof RelatedSchema['shape'])[] = (keyof RelatedSchema['shape'])[]
+> =
+  | HasOneReference<RelatedSchema, RelatedSchemaForeignKey>
+  | BelongsToOneReference<RelatedSchema, Schema, SchemaForeignKey>;
+
+type SchemaDefinition<
+  Schema extends AnyZodObject,
+  PrimaryKey extends (keyof Schema['shape'])[],
+  References extends Record<string, Reference<Schema>>
+> = {
+  schema: Schema;
+  primaryKey: PrimaryKey;
+  references: References;
+};
+
+function n2<
+  Schema extends AnyZodObject,
+  PrimaryKey extends (keyof Schema['shape'])[],
+  References extends Record<string, Reference>
+>(s: SchemaDefinition<Schema, PrimaryKey, References>) {
+  return null;
+}
+
+interface Model<Schema extends AnyZodObject> {
+  schema: Schema;
+  hasPrimaryKey<PrimaryKey extends (keyof Schema['shape'])[]>(
+    primaryKey: PrimaryKey
+  ): this & { primaryKey: PrimaryKey };
+  hasOne<
+    Key extends string,
+    RelatedSchema extends AnyZodObject,
+    ForeignKey extends (keyof RelatedSchema['shape'])[]
+  >(
+    key: Key,
+    relatedSchema: RelatedSchema,
+    foreignKey: ForeignKey
+  ): this & {
+    references: {
+      [K in Key]: { hasOne: RelatedSchema; referencedBy: ForeignKey };
+    };
+  };
+  hasMany<
+    Key extends string,
+    RelatedSchema extends AnyZodObject,
+    ForeignKey extends (keyof RelatedSchema['shape'])[]
+  >(
+    key: Key,
+    relatedSchema: RelatedSchema,
+    foreignKey: ForeignKey
+  ): this & {
+    references: {
+      [K in Key]: { hasMany: RelatedSchema; referencedBy: ForeignKey };
+    };
+  };
+}
+
+function model<Schema extends AnyZodObject>(schema: Schema): Model<Schema> {
+  throw new Error('nor implemented');
+}
+
+const ProductModel = model(Product)
+  .hasPrimaryKey(['id'])
+  .hasMany('cateogories', ProductCategory, ['productId'])
+  .hasOne('category', ProductCategory, ['productId']);
+
+// getAll(ProductModel).withMany('categories')
+
+type KeysOfType<T, Type> = {
+  [K in keyof T]: T[K] extends Type ? K : never;
+}[keyof T];
+
+type HasManyReference = {
+  hasMany: AnyZodObject;
+};
+
+type HasManyReferenceKeys<T> = T extends { references: infer R }
+  ? KeysOfType<R, { hasMany: AnyZodObject }>
+  : never;
+
+type GetHasManyReferenceType<T, K> = T extends { references: infer R }
+  ? K extends keyof R
+    ? R[K] extends { hasMany: infer Schema }
+      ? Schema extends ZodTypeAny
+        ? z.infer<Schema>[]
+        : never
+      : never
+    : never
+  : never;
+interface GetAll<
+  SchemaModel extends Model<AnyZodObject>,
+  T = z.infer<SchemaModel['schema']>
+> {
+  withMany<Key extends HasManyReferenceKeys<SchemaModel>>(
+    key: Key
+  ): GetAll<
+    SchemaModel,
+    T & { [K in Key]: GetHasManyReferenceType<SchemaModel, K> }
+  >;
+  execute(): T;
+}
+
+function getAll<SchemaModel extends Model<AnyZodObject>>(
+  model: SchemaModel
+): GetAll<SchemaModel> {
+  throw new Error('not implemented');
+}
+
+const all = getAll(ProductModel).withMany('cateogories').execute();
