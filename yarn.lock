@@ -3276,7 +3276,6 @@ __metadata:
     tslib: ^2.3.0
     typescript: ~5.1.3
     verdaccio: ^5.0.4
-    zod: ^3.22.2
   languageName: unknown
   linkType: soft
 
@@ -9117,12 +9116,5 @@ __metadata:
     property-expr: ^2.0.4
     toposort: ^2.0.2
   checksum: 43a16786b47cc910fed4891cebdd89df6d6e31702e9462e8f969c73eac88551ce750732608012201ea6b93802c8847cb0aa27b5d57370640f4ecf30f9f97d4b0
-  languageName: node
-  linkType: hard
-
-"zod@npm:^3.22.2":
-  version: 3.22.2
-  resolution: "zod@npm:3.22.2"
-  checksum: 231e2180c8eabb56e88680d80baff5cf6cbe6d64df3c44c50ebe52f73081ecd0229b1c7215b9552537f537a36d9e36afac2737ddd86dc14e3519bdbc777e82b9
   languageName: node
   linkType: hard

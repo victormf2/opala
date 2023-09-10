@@ -12,7 +12,6 @@
         "main": "libs/core/src/index.ts",
         "tsConfig": "libs/core/tsconfig.lib.json",
         "assets": ["libs/core/*.md"],
-        "generatePackageJson": true,
         "format": ["cjs"]
       }
     },

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { Expect, ExpectExtends } from '@type-challenges/utils';
 import { Model, hasMany } from './model';
 import { Operation } from './operation';
 import { build } from './operation-builder';
@@ -32,18 +31,23 @@ const tables = {
 const $ = build(tables);
 
 const simpleCreate = $.create('products');
-type SimpleCreate = Expect<
-  ExpectExtends<
-    Operation<
-      {
-        id?: number;
-        name: string;
-      },
-      unknown
-    >,
-    typeof simpleCreate
-  >
->;
+const simpleCreateCheck: Operation<
+  {
+    id?: number;
+    name: string;
+  },
+  unknown
+> = simpleCreate;
+
+const createWithReference = $.create('categories').withReferenceTo('products');
+const createWithReferenceCheck: Operation<
+  {
+    id?: number;
+    name: string;
+    products: { id: number }[];
+  },
+  unknown
+> = createWithReference;
 
 const getAll = $.using(object({ name: string() })).do(({ name }) =>
   $.from('products')
@@ -55,31 +59,21 @@ const getAll = $.using(object({ name: string() })).do(({ name }) =>
     )
     .all()
 );
-type GetAll = Expect<
-  ExpectExtends<
-    Operation<
-      {
-        name: string;
-      },
-      Infer<typeof ProductSchema>[]
-    >,
-    typeof getAll
-  >
->;
+const getAllCheck: Operation<
+  {
+    name: string;
+  },
+  Infer<typeof ProductSchema>[]
+> = getAll;
 
 const getFirst = $.using(object({ id: number() })).do(({ id }) =>
   $.from('categories')
     .filter((category) => category.id.equals(id))
     .first()
 );
-type GetFirst = Expect<
-  ExpectExtends<
-    Operation<
-      {
-        id: number;
-      },
-      Infer<typeof CategorySchema> | undefined
-    >,
-    typeof getFirst
-  >
->;
+const getFirstCheck: Operation<
+  {
+    id: number;
+  },
+  Infer<typeof CategorySchema> | undefined
+> = getFirst;

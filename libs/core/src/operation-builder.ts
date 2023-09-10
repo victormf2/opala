@@ -1,4 +1,4 @@
-import { Create } from './create';
+import { CreateOperation } from './create';
 import { Model } from './model';
 import { Operation } from './operation';
 import { QueryBuilder } from './query';
@@ -20,7 +20,7 @@ export type OperationsBuilder<TTables extends Tables> = {
   ) => QueryBuilder<TTables[TTableName]>;
   create: <TTableName extends TableNames<TTables>>(
     tableName: TTableName
-  ) => Create<TTables[TTableName]>;
+  ) => CreateOperation<TTables[TTableName]>;
 };
 
 type Chain<TSchema extends Schema> = {

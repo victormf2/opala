@@ -1,1 +1,1 @@
-export * from './lib/kysely';
+export * from './provider';

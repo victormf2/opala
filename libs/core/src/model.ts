@@ -5,22 +5,33 @@ export abstract class Model<TSchema extends ObjectSchemaAny = ObjectSchemaAny> {
   constructor(readonly schema: TSchema) {}
 }
 export type ModelType<TModel extends Model> = Infer<TModel['schema']>;
-export type ModelShape<TModel extends Model> = TModel['schema']['shape'];
+export type ModelShape<TModel extends Model> =
+  TModel['schema']['config']['shape'];
 
 export interface ModelConstructor<TModel extends Model> {
   new (schema: TModel['schema']): TModel;
 }
 
-type BaseReference<TReferencedModel extends Model> = {
-  referencedModel: TReferencedModel;
-};
-export type HasMany<TReferencedModel extends Model> =
-  BaseReference<TReferencedModel> & {
-    referenceType: 'HAS_MANY';
-  };
-export declare function hasMany<TModel extends Model>(
+export abstract class BaseReference<TReferencedModel extends Model> {
+  abstract get referencedModel(): TReferencedModel;
+}
+export class HasMany<
+  TReferencedModel extends Model
+> extends BaseReference<TReferencedModel> {
+  readonly referenceType = 'HAS_MANY' as const;
+
+  constructor(private referenceFn: () => TReferencedModel) {
+    super();
+  }
+  get referencedModel(): TReferencedModel {
+    return this.referenceFn();
+  }
+}
+export function hasMany<TModel extends Model>(
   reference: () => TModel
-): HasMany<TModel>;
+): HasMany<TModel> {
+  return new HasMany(reference);
+}
 
 export type ModelReference<TReferencedModel extends Model = Model> =
   HasMany<TReferencedModel>;
@@ -39,11 +50,17 @@ export type ReferencesObject = {
 
 type ModelWithPrimaryKey<
   TSchema extends ObjectSchemaAny,
-  TPrimaryKey extends readonly (keyof TSchema['shape'])[]
+  TPrimaryKey extends readonly (keyof TSchema['config']['shape'])[]
 > = {
   primaryKey: TPrimaryKey;
 };
 export type PrimaryKeyShape<TModel extends Model> =
-  TModel extends ModelWithPrimaryKey<infer _, infer TPrimaryKey>
-    ? Pick<TModel['schema']['shape'], TPrimaryKey[number]>
+  TModel extends ModelWithPrimaryKey<ObjectSchemaAny, infer TPrimaryKey>
+    ? Pick<ModelShape<TModel>, TPrimaryKey[number]>
     : never;
+
+export function hasPrimaryKey<TModel extends Model>(
+  model: TModel
+): model is TModel & { primaryKey: (keyof ModelShape<TModel>)[] } {
+  return Array.isArray((model as any).primaryKey);
+}

@@ -15,3 +15,7 @@ export type Incompatible<A, B> = {
   type: A;
   isNotAssignableTo: B;
 };
+
+export type Constructor<T> = T extends new (...args: infer P) => T
+  ? new (...args: P) => T
+  : never;
