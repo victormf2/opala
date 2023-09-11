@@ -1,13 +1,19 @@
 import { HasMany, Model, ModelReferences, ModelType } from './model';
 import { Operation } from './operation';
 
-export type QueryBuilder<TModel extends Model, TOutput = ModelType<TModel>> = {
-  filter: (queryFilter: QueryFilter<TModel>) => QueryBuilder<TModel, TOutput>;
-  all: () => Operation<unknown, TOutput[]>;
-  first: () => Operation<unknown, TOutput | undefined>;
-};
+export class QueryBuilder<TModel extends Model, TOutput = ModelType<TModel>> {
+  filter(queryFilter: QueryFilter<TModel>): QueryBuilder<TModel, TOutput> {
+    throw new Error('not implemented');
+  }
+  all(): Operation<unknown, TOutput[]> {
+    throw new Error('not implemented');
+  }
+  first(): Operation<unknown, TOutput | undefined> {
+    throw new Error('not implemented');
+  }
+}
 
-declare abstract class FilterCommand {}
+export abstract class FilterCommand {}
 type QueryFilter<TModel extends Model> = (
   filter: ModelFilterCommands<TModel>
 ) => FilterCommand;
