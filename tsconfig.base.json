@@ -16,9 +16,6 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@app-builder/core": ["libs/core/src/index.ts"],
-      "@app-builder/kysely": ["libs/kysely/src/index.ts"],
-      "@app-builder/utils": ["libs/utils/src/index.ts"],
       "@opala/backend": ["packages/backend/src/index.ts"]
     }
   },
