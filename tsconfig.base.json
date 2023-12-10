@@ -11,13 +11,15 @@
     "target": "es2015",
     "module": "esnext",
     "lib": ["es2020", "dom"],
+    "strict": true,
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
       "@app-builder/core": ["libs/core/src/index.ts"],
       "@app-builder/kysely": ["libs/kysely/src/index.ts"],
-      "@app-builder/utils": ["libs/utils/src/index.ts"]
+      "@app-builder/utils": ["libs/utils/src/index.ts"],
+      "@opala/backend": ["packages/backend/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

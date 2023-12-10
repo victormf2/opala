@@ -20,6 +20,21 @@
         "{workspaceRoot}/.eslintrc.json",
         "{workspaceRoot}/.eslintignore"
       ]
+    },
+    "@nx/vite:test": {
+      "cache": true,
+      "inputs": ["default", "^default"]
+    }
+  },
+  "generators": {
+    "@nx/js": {
+      "library": {
+        "bundler": "tsc",
+        "publishable": "true",
+        "projectNameAndRootFormat": "as-provided",
+        "strict": true,
+        "unitTestRunner": "vitest"
+      }
     }
   }
 }

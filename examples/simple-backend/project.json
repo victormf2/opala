@@ -1,0 +1,60 @@
+{
+  "name": "simple-backend",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "examples/simple-backend/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "platform": "node",
+        "outputPath": "dist/examples/simple-backend",
+        "format": ["cjs"],
+        "bundle": false,
+        "main": "examples/simple-backend/src/main.ts",
+        "tsConfig": "examples/simple-backend/tsconfig.app.json",
+        "assets": ["examples/simple-backend/src/assets"],
+        "generatePackageJson": true,
+        "esbuildOptions": {
+          "sourcemap": true,
+          "outExtension": {
+            ".js": ".js"
+          }
+        }
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "esbuildOptions": {
+            "sourcemap": false,
+            "outExtension": {
+              ".js": ".js"
+            }
+          }
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "simple-backend:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "simple-backend:build:development"
+        },
+        "production": {
+          "buildTarget": "simple-backend:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    }
+  },
+  "tags": []
+}
