@@ -28,6 +28,12 @@
       "options": {
         "reportsDirectory": "../../coverage/packages/backend"
       }
+    },
+    "release": {
+      "executor": "nx-release:build-update-publish",
+      "options": {
+        "libName": "backend"
+      }
     }
   },
   "tags": []
