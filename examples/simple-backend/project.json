@@ -40,7 +40,9 @@
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "simple-backend:build"
+        "runBuildTargetDependencies": true,
+        "buildTarget": "simple-backend:build",
+        "runtimeArgs": ["-r", "@opala/backend/setup"]
       },
       "configurations": {
         "development": {

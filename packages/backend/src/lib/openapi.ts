@@ -34,14 +34,14 @@ export function generateOpenAPIDocs(router: Router) {
       }
 
       const endpointConfig = routeLayer.handle.config
-      const operation: ZodOpenApiOperationObject = (paths[path][
-        routeLayer.method
-      ] = {
+      const operation: ZodOpenApiOperationObject = {
+        operationId: endpointConfig.operationId,
         responses: {},
         tags: endpointConfig.tags,
         summary: endpointConfig.summary,
         description: endpointConfig.description,
-      })
+      }
+      paths[path][routeLayer.method] = operation
       const requestConfig = endpointConfig.request
       if (requestConfig?.path) {
         operation.requestParams ??= {}

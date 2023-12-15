@@ -15,10 +15,10 @@
   },
   "devDependencies": {
     "@nx/esbuild": "17.2.0",
+    "@nx/eslint": "17.2.0",
     "@nx/eslint-plugin": "17.2.0",
     "@nx/jest": "17.2.0",
     "@nx/js": "17.2.0",
-    "@nx/linter": "17.2.0",
     "@nx/node": "17.2.0",
     "@nx/vite": "17.2.0",
     "@semantic-release/changelog": "^6.0.3",

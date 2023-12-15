@@ -61,6 +61,7 @@ interface EndpointConfig<
   TRequestConfig extends RequestConfig = RequestConfig,
   TResponseConfig extends ResponseConfig | unknown = unknown,
 > extends Pick<ZodOpenApiOperationObject, 'tags' | 'summary' | 'description'> {
+  operationId: string
   request?: TRequestConfig
   response?: TResponseConfig
   handler: (
