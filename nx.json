@@ -1,23 +1,19 @@
 {
-  "affected": {
-    "defaultBase": "main"
-  },
   "targetDefaults": {
-    "test": {
-      "inputs": ["default", "^default", "{workspaceRoot}/jest.preset.js"]
-    },
-    "lint": {
-      "inputs": [
-        "default",
-        "{workspaceRoot}/.eslintrc.json",
-        "{workspaceRoot}/.eslintignore"
-      ]
-    },
     "@nx/vite:test": {
       "cache": true,
       "inputs": ["default", "^default"]
     },
     "build": {
+      "cache": true,
+      "dependsOn": ["^build"]
+    },
+    "@nx/eslint:lint": {
+      "inputs": [
+        "default",
+        "{workspaceRoot}/.eslintrc.json",
+        "{workspaceRoot}/.eslintignore"
+      ],
       "cache": true
     }
   },
@@ -31,5 +27,7 @@
         "unitTestRunner": "vitest"
       }
     }
-  }
+  },
+  "useInferencePlugins": false,
+  "defaultBase": "main"
 }

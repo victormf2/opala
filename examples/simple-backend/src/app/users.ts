@@ -15,7 +15,7 @@ export const getAllUsers = endpoint({
   tags: ['Users'],
   summary: 'Get all users',
   response: {
-    200: z
+    schema: z
       .object({
         users: z.array(User),
       })
@@ -25,10 +25,7 @@ export const getAllUsers = endpoint({
   },
   async handler() {
     return {
-      statusCode: '200',
-      data: {
-        users,
-      },
+      users,
     }
   },
 })
@@ -57,7 +54,7 @@ export const getUserByName = endpoint({
     }),
   },
   response: {
-    200: z
+    schema: z
       .object({
         user: User,
       })
@@ -70,9 +67,6 @@ export const getUserByName = endpoint({
     if (user == null) {
       throw new Error('User Not Found')
     }
-    return {
-      statusCode: '200',
-      data: { user },
-    }
+    return { user }
   },
 })

@@ -1,7 +1,7 @@
 import { Application, json } from 'express'
-import { writeFileSync } from 'fs'
 import * as swaggerUi from 'swagger-ui-express'
 import { OpenAPIObject } from 'zod-openapi/lib-types/openapi3-ts/dist/oas31'
+import { isExpressApplication } from './helpers'
 import { generateOpenAPIDocs } from './openapi'
 import express = require('express')
 
@@ -17,12 +17,18 @@ declare global {
   }
 }
 
-export const defaultExpressConfiguration: ConfigureExpressOptions = {
-  swagger: true,
-}
+export const defaultExpressConfiguration = {
+  openApi: {
+    enable: true,
+    path: '/docs',
+  },
+} satisfies ConfigureExpressOptions
 
 interface ConfigureExpressOptions {
-  swagger: boolean
+  openApi: {
+    enable?: boolean
+    path?: string
+  }
 }
 export function configureExpressApplication(): Application
 export function configureExpressApplication(
@@ -49,31 +55,29 @@ export function configureExpressApplication(
   const app = isExpressApplication(p0) ? p0 : express()
   app.use(json())
 
-  if (config.swagger) {
-    const openApiDocs = generateOpenAPIDocs(app._router)
-
+  if (config.openApi.enable) {
+    const openApiDocsPath =
+      config.openApi.path ?? defaultExpressConfiguration.openApi.path
     const options = {
       swaggerOptions: {
-        url: '/api-docs/swagger.json',
+        url: `${openApiDocsPath}/swagger.json`,
       },
     }
-    app.get('/api-docs/swagger.json', (req, res) => res.json(openApiDocs))
+
+    let openApiDocs: OpenAPIObject | null = null
+    app.get(`${openApiDocsPath}/swagger.json`, (req, res) => {
+      if (openApiDocs == null) {
+        openApiDocs = generateOpenAPIDocs(app)
+        app.openApiDocs = openApiDocs
+      }
+      res.json(openApiDocs)
+    })
     app.use(
-      '/api-docs',
+      openApiDocsPath,
       swaggerUi.serveFiles(undefined, options),
       swaggerUi.setup(undefined, options),
     )
-
-    writeFileSync('assets/swagger.jon', JSON.stringify(config.swagger, null, 2))
-
-    app.openApiDocs = openApiDocs
   }
 
   return app
-}
-
-function isExpressApplication(obj: unknown): obj is Application {
-  return (
-    typeof obj === 'function' && 'init' in obj && typeof obj.init === 'function'
-  )
 }

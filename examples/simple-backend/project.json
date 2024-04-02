@@ -41,12 +41,15 @@
       "defaultConfiguration": "development",
       "options": {
         "runBuildTargetDependencies": true,
-        "buildTarget": "simple-backend:build",
-        "runtimeArgs": ["-r", "@opala/backend/setup"]
+        "buildTarget": "simple-backend:build"
       },
       "configurations": {
         "development": {
-          "buildTarget": "simple-backend:build:development"
+          "buildTarget": "simple-backend:build:development",
+          "runtimeArgs": [
+            "-r",
+            "./dist/examples/simple-backend/packages/backend/src/setup.js"
+          ]
         },
         "production": {
           "buildTarget": "simple-backend:build:production"

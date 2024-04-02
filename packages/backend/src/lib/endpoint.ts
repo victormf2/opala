@@ -22,51 +22,34 @@ export type EndpointRequest<
     : never
 }
 
-export type HttpStatusCode = `${1 | 2 | 3 | 4 | 5}${string}`
-export function isHttpStatusCode(str: string): str is HttpStatusCode {
-  return str.length === 3 && ['1', '2', '3', '4', '5'].includes(str[0])
+export interface ResponseConfig<
+  TResponseSchema extends z.ZodString | z.AnyZodObject =
+    | z.ZodString
+    | z.AnyZodObject,
+> {
+  schema: TResponseSchema
+  status?: number
 }
 
-type SuccessHttpStatusCode =
-  | '200'
-  | '201'
-  | '202'
-  | '203'
-  | '204'
-  | '205'
-  | '206'
-  | '207'
-  | '208'
-  | '226'
-
-export type ResponseConfig = {
-  [K in HttpStatusCode]?: z.ZodString | z.AnyZodObject
-}
-
-type InferResponseType<TResponseConfig, THttpStatusCode> =
-  unknown extends TResponseConfig
-    ? void
-    : THttpStatusCode extends HttpStatusCode
-    ? TResponseConfig extends ResponseConfig
-      ? TResponseConfig[THttpStatusCode] extends z.ZodTypeAny
-        ? {
-            statusCode: THttpStatusCode
-            data: z.input<TResponseConfig[THttpStatusCode]>
-          }
-        : never
-      : never
-    : never
-
-interface EndpointConfig<
-  TRequestConfig extends RequestConfig = RequestConfig,
-  TResponseConfig extends ResponseConfig | unknown = unknown,
-> extends Pick<ZodOpenApiOperationObject, 'tags' | 'summary' | 'description'> {
+interface EndpointConfigBase<TRequestConfig extends RequestConfig>
+  extends Pick<ZodOpenApiOperationObject, 'tags' | 'summary' | 'description'> {
   operationId: string
   request?: TRequestConfig
-  response?: TResponseConfig
+}
+
+interface EndpointConfigWithResponse<
+  TRequestConfig extends RequestConfig,
+  TResponseConfig extends ResponseConfig,
+> extends EndpointConfigBase<TRequestConfig> {
+  response: TResponseConfig
   handler: (
     request: EndpointRequest<TRequestConfig>,
-  ) => Promise<InferResponseType<TResponseConfig, SuccessHttpStatusCode>>
+  ) => Promise<z.input<TResponseConfig['schema']>>
+}
+
+interface EndpointConfigWithoutResponse<TRequestConfig extends RequestConfig>
+  extends EndpointConfigBase<TRequestConfig> {
+  handler: (request: EndpointRequest<TRequestConfig>) => Promise<void>
 }
 
 interface ValidatedRequest {
@@ -74,10 +57,39 @@ interface ValidatedRequest {
   path?: unknown
   query?: unknown
 }
+
+export function endpoint<TRequestConfig extends RequestConfig = RequestConfig>(
+  config: EndpointConfigWithoutResponse<TRequestConfig>,
+): express.RequestHandler & { config: typeof config }
 export function endpoint<
   TRequestConfig extends RequestConfig = RequestConfig,
-  TResponseConfig extends ResponseConfig | unknown = unknown,
->(config: EndpointConfig<TRequestConfig, TResponseConfig>) {
+  TResponseConfig extends ResponseConfig = ResponseConfig,
+>(
+  config: EndpointConfigWithResponse<TRequestConfig, TResponseConfig>,
+): express.RequestHandler & { config: typeof config }
+export function endpoint<
+  TRequestConfig extends RequestConfig = RequestConfig,
+  TResponseConfig extends ResponseConfig = ResponseConfig,
+>(
+  config:
+    | EndpointConfigWithoutResponse<TRequestConfig>
+    | EndpointConfigWithResponse<TRequestConfig, TResponseConfig>,
+): express.RequestHandler & { config: typeof config } {
+  const handleValidatedRequest =
+    'response' in config
+      ? (
+          validatedRequest: EndpointRequest<TRequestConfig>,
+          res: express.Response,
+        ) =>
+          config
+            .handler(validatedRequest)
+            .then((result) =>
+              res.status(config.response.status ?? 200).send(result),
+            )
+      : (
+          validatedRequest: EndpointRequest<TRequestConfig>,
+          res: express.Response,
+        ) => config.handler(validatedRequest).then(() => res.sendStatus(204))
   function handler(
     req: express.Request,
     res: express.Response,
@@ -87,7 +99,7 @@ export function endpoint<
     if (config.request) {
       const pathValidationResult = config.request.path?.safeParse(req.params)
       const bodyValidationResult = config.request.body?.safeParse(req.body)
-      const queryValidationResult = config.request.query?.safeParse(req.params)
+      const queryValidationResult = config.request.query?.safeParse(req.query)
 
       const issues: z.ZodIssue[] = []
       if (pathValidationResult) {
@@ -119,16 +131,10 @@ export function endpoint<
       }
     }
 
-    config
-      .handler(validatedRequest as EndpointRequest<TRequestConfig>)
-      .then((result) => {
-        if (result) {
-          res.status(Number(result.statusCode)).send(result.data)
-        } else {
-          res.status(204).send()
-        }
-      })
-      .catch((error) => next(error))
+    handleValidatedRequest(
+      validatedRequest as EndpointRequest<TRequestConfig>,
+      res,
+    ).catch((error) => next(error))
   }
 
   handler.config = config

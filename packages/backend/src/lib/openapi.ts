@@ -1,13 +1,17 @@
 import assert = require('assert')
-import { Router } from 'express'
+import { Application, Router } from 'express'
 import {
   ZodOpenApiObject,
   ZodOpenApiOperationObject,
   createDocument,
 } from 'zod-openapi'
-import { ResponseConfig, endpoint, isHttpStatusCode } from './endpoint'
+import { ResponseConfig, endpoint } from './endpoint'
+import { isExpressApplication } from './helpers'
 
-export function generateOpenAPIDocs(router: Router) {
+export function generateOpenAPIDocs(router: Router | Application) {
+  if (isExpressApplication(router)) {
+    router = router._router
+  }
   const zodOpenApiObject: ZodOpenApiObject = {
     openapi: '3.1.0',
     info: {
@@ -64,18 +68,20 @@ export function generateOpenAPIDocs(router: Router) {
         | ResponseConfig
         | undefined
       if (responseConfig) {
-        for (const statusCode in responseConfig) {
-          if (!isHttpStatusCode(statusCode)) {
-            continue
-          }
-          operation.responses[statusCode] = {
-            description: statusCode,
-            content: {
-              'application/json': {
-                schema: responseConfig[statusCode],
-              },
+        const { status, schema } = responseConfig
+        const statusCode = String(status ?? 200) as `${
+          | 1
+          | 2
+          | 3
+          | 4
+          | 5}${string}`
+        operation.responses[statusCode] = {
+          description: statusCode,
+          content: {
+            'application/json': {
+              schema,
             },
-          }
+          },
         }
       } else {
         operation.responses['204'] = {
