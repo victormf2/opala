@@ -1,5 +1,6 @@
 import { endpoint } from '@opala/backend'
 import { z } from 'zod'
+import { resultError, resultSuccess, zodResult } from '../result'
 
 export const User = z
   .object({
@@ -15,18 +16,16 @@ export const getAllUsers = endpoint({
   tags: ['Users'],
   summary: 'Get all users',
   response: {
-    schema: z
-      .object({
+    schema: zodResult(
+      z.object({
         users: z.array(User),
-      })
-      .openapi({
-        ref: 'getUsersResponse',
       }),
+    ),
   },
   async handler() {
-    return {
+    return resultSuccess({
       users,
-    }
+    })
   },
 })
 
@@ -50,23 +49,21 @@ export const getUserByName = endpoint({
   summary: 'Get user by name',
   request: {
     path: z.object({
-      name: z.string(),
+      name: z.string().refine((str) => str.length < 3),
     }),
   },
   response: {
-    schema: z
-      .object({
+    schema: zodResult(
+      z.object({
         user: User,
-      })
-      .openapi({
-        ref: 'GetUserByNameResponse',
       }),
+    ),
   },
   async handler({ path: { name } }) {
     const user = users.find((u) => u.name === name)
     if (user == null) {
-      throw new Error('User Not Found')
+      return resultError('not_found', { status: 404 })
     }
-    return { user }
+    return resultSuccess({ user })
   },
 })

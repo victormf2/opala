@@ -23,34 +23,30 @@ export type EndpointRequest<
 }
 
 export interface ResponseConfig<
-  TResponseSchema extends z.ZodString | z.AnyZodObject =
-    | z.ZodString
-    | z.AnyZodObject,
+  TResponseSchema extends z.ZodTypeAny = z.ZodTypeAny,
 > {
   schema: TResponseSchema
   status?: number
 }
 
-interface EndpointConfigBase<TRequestConfig extends RequestConfig>
-  extends Pick<ZodOpenApiOperationObject, 'tags' | 'summary' | 'description'> {
+interface EndpointConfig<
+  TRequestConfig extends RequestConfig,
+  TResponseConfig extends ResponseConfig | undefined,
+> extends Pick<ZodOpenApiOperationObject, 'tags' | 'summary' | 'description'> {
   operationId: string
   request?: TRequestConfig
-}
-
-interface EndpointConfigWithResponse<
-  TRequestConfig extends RequestConfig,
-  TResponseConfig extends ResponseConfig,
-> extends EndpointConfigBase<TRequestConfig> {
-  response: TResponseConfig
+  response?: TResponseConfig
   handler: (
     request: EndpointRequest<TRequestConfig>,
-  ) => Promise<z.input<TResponseConfig['schema']>>
+  ) => TResponseConfig extends ResponseConfig
+    ? Promise<z.input<TResponseConfig['schema']>>
+    : Promise<void>
 }
 
-interface EndpointConfigWithoutResponse<TRequestConfig extends RequestConfig>
-  extends EndpointConfigBase<TRequestConfig> {
-  handler: (request: EndpointRequest<TRequestConfig>) => Promise<void>
-}
+export type EndpointMetadata<
+  TRequestConfig extends RequestConfig = RequestConfig,
+  TResponseConfig extends ResponseConfig = ResponseConfig,
+> = Omit<EndpointConfig<TRequestConfig, TResponseConfig>, 'handler'>
 
 interface ValidatedRequest {
   body?: unknown
@@ -58,38 +54,12 @@ interface ValidatedRequest {
   query?: unknown
 }
 
-export function endpoint<TRequestConfig extends RequestConfig = RequestConfig>(
-  config: EndpointConfigWithoutResponse<TRequestConfig>,
-): express.RequestHandler & { config: typeof config }
 export function endpoint<
   TRequestConfig extends RequestConfig = RequestConfig,
-  TResponseConfig extends ResponseConfig = ResponseConfig,
+  TResponseConfig extends ResponseConfig | undefined = undefined,
 >(
-  config: EndpointConfigWithResponse<TRequestConfig, TResponseConfig>,
-): express.RequestHandler & { config: typeof config }
-export function endpoint<
-  TRequestConfig extends RequestConfig = RequestConfig,
-  TResponseConfig extends ResponseConfig = ResponseConfig,
->(
-  config:
-    | EndpointConfigWithoutResponse<TRequestConfig>
-    | EndpointConfigWithResponse<TRequestConfig, TResponseConfig>,
+  config: EndpointConfig<TRequestConfig, TResponseConfig>,
 ): express.RequestHandler & { config: typeof config } {
-  const handleValidatedRequest =
-    'response' in config
-      ? (
-          validatedRequest: EndpointRequest<TRequestConfig>,
-          res: express.Response,
-        ) =>
-          config
-            .handler(validatedRequest)
-            .then((result) =>
-              res.status(config.response.status ?? 200).send(result),
-            )
-      : (
-          validatedRequest: EndpointRequest<TRequestConfig>,
-          res: express.Response,
-        ) => config.handler(validatedRequest).then(() => res.sendStatus(204))
   function handler(
     req: express.Request,
     res: express.Response,
@@ -126,15 +96,40 @@ export function endpoint<
 
       if (issues.length > 0) {
         const error = new ZodError(issues)
-        res.status(400).send(error)
+        req.app.opala
+          .errorHandler?.(error, {
+            endpoint: config,
+            next,
+            req,
+            res,
+          })
+          .catch((innerError) => next(innerError))
         return
       }
     }
 
-    handleValidatedRequest(
-      validatedRequest as EndpointRequest<TRequestConfig>,
-      res,
-    ).catch((error) => next(error))
+    config
+      .handler(validatedRequest as EndpointRequest<TRequestConfig>)
+      .then((value) => {
+        req.app.opala
+          .successHandler?.(value, {
+            endpoint: config,
+            next,
+            req,
+            res,
+          })
+          .catch((innerError) => next(innerError))
+      })
+      .catch((error) => {
+        req.app.opala
+          .errorHandler?.(error, {
+            endpoint: config,
+            next,
+            req,
+            res,
+          })
+          .catch((innerError) => next(innerError))
+      })
   }
 
   handler.config = config
