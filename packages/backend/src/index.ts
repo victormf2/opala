@@ -1,3 +1,6 @@
 export * from './lib/configure'
-export * from './lib/endpoint'
+export * from './lib/context'
+export * from './lib/endpoints2'
+export * from './lib/errors'
 export * from './lib/openapi'
+export * from './lib/router'

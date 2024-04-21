@@ -25,7 +25,7 @@ export type EndpointRequest<
 export interface ResponseConfig<
   TResponseSchema extends z.ZodTypeAny = z.ZodTypeAny,
 > {
-  schema: TResponseSchema
+  schema?: TResponseSchema
   status?: number
 }
 
@@ -39,7 +39,9 @@ interface EndpointConfig<
   handler: (
     request: EndpointRequest<TRequestConfig>,
   ) => TResponseConfig extends ResponseConfig
-    ? Promise<z.input<TResponseConfig['schema']>>
+    ? TResponseConfig['schema'] extends z.ZodTypeAny
+      ? Promise<z.input<TResponseConfig['schema']>>
+      : Promise<void>
     : Promise<void>
 }
 
@@ -135,8 +137,4 @@ export function endpoint<
   handler.config = config
 
   return handler
-}
-
-export function e<Errors = Error>(): Errors {
-  return null as unknown as Errors
 }
